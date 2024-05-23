@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento de Consulta</title>
+    <style>
+        /* Adicione estilos CSS aqui */
+    </style>
+</head>
+<body>
+<h1>Agendamento de Consulta</h1>
+<form id="appointmentForm">
+    <label for="nameOrCpf">Nome ou CPF:</label>
+    <input type="text" id="nameOrCpf" name="nameOrCpf" required>
+    <button type="button" onclick="searchPatient()">Consultar</button>
+    <br>
+    <label for="examType">Tipo de Exame:</label>
+    <select id="examType" name="examType" required>
+        <!-- Opções serão preenchidas dinamicamente após selecionar um paciente -->
+    </select>
+    <br>
+    <label for="date">Data:</label>
+    <input type="date" id="date" name="date" required>
+    <br>
+    <label for="time">Hora:</label>
+    <input type="time" id="time" name="time" required>
+    <br>
+    <button type="submit">Agendar Consulta</button>
+</form>
+
+<script>
+    function searchPatient() {
+        const nameOrCpf = document.getElementById("nameOrCpf").value;
+
+        // Verificar se o campo está preenchido
+        if (nameOrCpf.trim() === "") {
+            alert("Por favor, insira o nome ou CPF do paciente.");
+            return;
+        }
+
+        // Fazer requisição AJAX para buscar o paciente pelo nome ou CPF
+        // Substitua a URL abaixo pela URL real do endpoint search no PatientController
+        const url = `/api/v1/patient/search?nameOrCpf=${nameOrCpf}`;
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Paciente não encontrado');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Preencher os campos do formulário com os dados do paciente encontrado
+                document.getElementById("examType").innerHTML = ""; // Limpar opções existentes
+
+                // Aqui você pode preencher outros campos do formulário com os dados do paciente, se necessário
+
+                alert("Paciente encontrado: " + data.name); // Exemplo de mensagem de alerta
+            })
+            .catch(error => {
+                console.error("Erro ao buscar paciente:", error);
+                const redirect = confirm("Paciente não encontrado. Deseja ser redirecionado para a página de cadastro?");
+                if (redirect) {
+                    window.location.href = "/cadastro-paciente.html";
+                }
+            });
+    }
+
+    // Função para buscar os tipos de exame do banco de dados com base no paciente selecionado
+    function fetchExamTypes(patientId) {
+        // Fazer requisição AJAX para buscar os tipos de exame com base no paciente selecionado
+        // Substitua a URL abaixo pela URL real da sua API
+        const url = `/api/v1/patient/${patientId}/exam-types`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Preencher o select de tipo de exame com os exames disponíveis para o paciente
+                const examTypeSelect = document.getElementById("examType");
+                examTypeSelect.innerHTML = ""; // Limpar opções existentes
+
+                data.examTypes.forEach(examType => {
+                    const option = document.createElement("option");
+                    option.value = examType.id;
+                    option.textContent = examType.name;
+                    examTypeSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error("Erro ao buscar tipos de exame:", error);
+                alert("Erro ao buscar tipos de exame. Por favor, tente novamente.");
+            });
+    }
+
+    document.getElementById("appointmentForm").addEventListener("submit", function(event) {
+        event.preventDefault(); // Evita o envio do formulário padrão
+
+        // Coletar dados do formulário
+        const nameOrCpf = document.getElementById("nameOrCpf").value;
+        const examTypeId = document.getElementById("examType").value;
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("time").value;
+
+        // Validar dados do formulário (opcional)
+
+        // Fazer requisição AJAX para agendar a consulta
+        // Substitua a URL abaixo pela URL real da sua API de agendamento de consulta
+        const url = "/api/appointments/schedule";
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nameOrCpf,
+                examTypeId,
+                date,
+                time
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Manipular a resposta do backend
+                const protocolNumber = data.protocolNumber;
+                alert("Consulta agendada com sucesso. Número de protocolo: " + protocolNumber);
+            })
+            .catch(error => {
+                console.error("Erro ao agendar consulta:", error);
+                alert("Erro ao agendar consulta. Por favor, tente novamente.");
+            });
+    });
+</script>
+
+</body>
+</html>
